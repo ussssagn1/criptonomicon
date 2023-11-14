@@ -57,23 +57,23 @@
           </svg>
           Добавить
         </button>
-      </section>
+      </section> <!--СЕКСИЯ ИНПУТА-->
 
       <template v-if="tickers.length">             
         <div>
-          <button class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500" v-if= 'page >= 1' @click="page = page - 1">
+          <button class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500" v-if= 'page > 1' @click="page = page - 1">
             Назад
           </button>
           <button class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500" @click="page = page + 1" v-if="hasNextPage">
             Вперед
           </button>
-          <div>Фильтр: <input v-model="filter" /></div>
+          <div>Фильтр: <input v-model="filter" @input="page = 1"/></div>
         </div>
 
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="t in filteredList"
+            v-for="t in paginatedList"
             :key='t.name'
             @click='select(t)'
             :class="{'border-4' : selectedTicker === t}"
@@ -286,7 +286,6 @@
           })
       },
       // нормализируем график
-
       normalizedGraph() {
         const maxValue = Math.max(...this.graph)
         const minValue = Math.min(...this.graph)
@@ -332,7 +331,7 @@
         this.page = 1
       },
       pageStateOptions(v) {
-          window.history.pushState(null, document.title, `${window.pathname}?filter=${v.filter}&${v.page}`) // URL - для страницы
+          window.history.pushState(null, document.title, `${window.location.pathname}?filter=${v.filter}&${v.page}`) // URL - для страницы
       },
       selectedTicker() {
           this.graph = [];
