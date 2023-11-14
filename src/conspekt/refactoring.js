@@ -82,8 +82,17 @@ watch: {
         this.page = 1;
         window.history.pushState(null, document.title, `${window.pathname}?filter=${this.filter}&${this.page}`)  URL - для фильтров
     }
-    page() {
-        window.history.pushState(null, document.title, `${window.pathname}?filter=${this.filter}&${this.page}`) URL - для страницы
+    pageStateOptions(v) {
+        window.history.pushState(null, document.title, `${window.pathname}?filter=${v.filter}&${v.page}`) URL - для страницы
+    }
+}
+
+computed: {
+    pageStateOptions() {
+        return {
+            filter: this.filter,
+            page: this.page
+        }
     }
 }
 
@@ -108,7 +117,7 @@ subscribeToUpdates(tickerName) {
 
 		this.tickers.find(t => t.name === tickerName).price = data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2) // выводим её вместо .price в объекте 
 
-		if(this.sel?.name === tickerName) {
+		if(this.selectedTicker?.name === tickerName) {
 			this.graph.push(data.USD)
 		}
 	}, 4000)
@@ -122,12 +131,12 @@ subscribeToUpdates(tickerName) {
 <div
 	v-for="t in filteredList" 
 	:key="t.name"
-	@click="sel = t" 
-	:class="{'border-4' : sel === t}"
+	@click="selectedTicker = t" 
+	:class="{'border-4' : selectedTicker === t}"
 	class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer">
     <!-- v-for - проходим по массиву tickers, выводим нужное, у каждолго елемента есть свой ключ :key
-		при клике на объект сробатывает функц. которая присваивает к sel елемент t
-		если sel равен t, то мы его выделяем с помощь бордера -->
+		при клике на объект сробатывает функц. которая присваивает к selectedTicker елемент t
+		если selectedTicker равен t, то мы его выделяем с помощь бордера -->
 	    <div class="px-4 py-5 sm:p-6 text-center">
 			<dt class="text-sm font-medium text-gray-500 truncate">
 				{{ t.name }} - USD
@@ -142,7 +151,7 @@ data() {
     return {
         ticker: '',
         tikcers: [],
-        sel: ''
+        selectedTicker: ''
     }
 }
 
@@ -151,29 +160,39 @@ add() {
         name: this.ticker,
         price: '-'
     }
+    
+    this.tickers = [...this.tickers, currentTicker] ОБНОВЛЕНИЕ СПИСКА ТИКЕРОВ (для localStorage)
+    this.filter = '',
 
     this.tickers.push(currentTicker);
-    this.filter = '',
 }
 
 --РЕАЛИЗАЦИЯ ВЫБОРА--
 
 select(ticker) {
-    this.sel = ticker;
-    this.graph = [];
+    this.selectedTicker = ticker;
+}
+
+watch: {                КОГДА МЕНЯЮТЬСЯ ТИКЕРЫ СОХРАНИ ИХ В ЛОКАЛСТОРАДЖЕ
+    tickers() {
+        localStorage.setItem('cryptonomicon-list', JSON.stringify(this.tickers));
+    }
 }
 
 -----------ЛОГИКА УДАЛЕНИЕ ТИКЕРА-------------------
 
 handleDelete(tickerToRemove) {
     this.tickers = this.tickers.filter(t => t != tickerToRemove)
-    if(this.sel === tickerToRemove) {
-        this.sel = null;
+    if(this.selectedTicker === tickerToRemove) {
+        this.selectedTicker = null;
     }
 }
 
 watch: {
-    paginatedTickers() {
+    selectedTicker() {
+        this.graph = [];
+    }
+    paginatedTickers() {                                                   ЕСЛИ МЫ НА СТРАНИЦЕ НИЧЕГО НЕ ВИДЕМ, СБРОСИМ СРАНИЦУ НАЗАД
         if(this.paginatedTickers.length === 0 && this.page > 1) {
             this.page -= 1
         }
