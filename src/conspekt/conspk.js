@@ -220,44 +220,155 @@ computed: {
 в App.vue должна быть реализована бизнес логика, а в других файлах как мы конкретные нюансы бизнес логики реализуем. 
 а что у нас не бизнес логика, всё что свзано с API
 
+------------------------------------------------------------------
 cоздаём файл api.js
 
 const API_KEY = `3285690656af1f203d8f0f6f2cdcea86a2f40b7a4babeec92873d29a87096ed6`
 
-export const loadTickers = (tickerName) => 
-	fetch(`https://min-api.cryptocompare.com/data/price?fsym=USD${tickerName}&tsyms=USD&api_key=${API_KEY}`)    
-		.then(r => r.json());          r - это данные API-шечки
-`)
+-------------------------------------------SINGLE SYMBOL--------------------------------------
+
+export const loadTickers = tickers => 
+	fetch(`https://min-api.cryptocompare.com/data/price?fsym=USD&tsyms=${tickers.join(',')}&api_key=${API_KEY}`)    
+		.then(r => r.json()) r - это данные API-шечки
+		.then(rawData => Object.fromEntries(                              						Дабы не заморачиваться по поводу получения неправильной цена токена ( 1 / число), 
+			Object.entries(rawData).map(([key, value]) => [key, 1 / value])						делаем это автоматически, когда получаем цену с API	
+		)               	         
+
+		получаем объект с api
+		{a: 1}, {b : 2}
+		Object.entries вернёт массив в каждом из которых содержаться 2 массива
+		[['a', 1], ['b', 2]] => потом мы берём и преобразовываем его с помощь map такой же массив
+		[['a', 1], ['b', 0.5]] и потом с помощью fromEntries приобразуем это обратно в объект a - ключ, 1 - значение 
+																							  b - ключ, 0.5 - значение
+
+------------------------------------------MULTIBLE SYMBOL - возвращаеться объект с нормальными ценами----------------------------------------
+
+
+НЮАНС! Так как api подразумевает что мы будем возвращать цену токена не в одной волюте(USD), а в нескольких
+то мы получаем объект запроса, и внутри есть ещё объект с выводом конвертируемой валюты пример:
+
+BTC {
+	{
+		USD: -----
+	},
+	{
+		UAH: ----
+	}
+} 
+
+поэтому надо немного переписать код
+
+export const loadTickers = tickers => 
+	fetch(`https://min-api.cryptocompare.com/data/pricemulti?fsyms=${tickers.join(',')}&tsyms=USD&api_key=${API_KEY}`)    
+		.then(r => r.json()) r - это данные API-шечки
+		.then(rawData => Object.fromEntries(                              						Дабы не заморачиваться по поводу получения неправильной цена токена ( 1 / число), 
+			Object.entries(rawData).map(([key, value]) => [key, value.USD])						делаем это автоматически, когда получаем цену с API	
+		)
+
+----------------------БЕЗНЕС ЛОГИКА - получать ОБНОВЛЕНИЯ стоимости токенов криповалютных пар с API-шки--------------------
+
+вверху мы получаем стоимость, но нам же не это надо, нам нужно обновлять!!!!
+
+const tickersHandlers = new Map()
+
+const loadTickers = () => {
+	if (tickersHandler.size === 0) {
+		return;
+	} else {
+		fetch(`https://min-api.cryptocompare.com/data/pricemulti?fsyms=${[...tickersHandler
+			.keys()]
+			.join(',')}&tsyms=USD&api_key=${API_KEY}`)    
+		.then(r => r.json()) r - это данные API-шечки
+		.then(rawData => {const updatedPrices = Object.fromEntries(                              						Дабы не заморачиваться по поводу получения неправильной цена токена ( 1 / число), 
+			Object.entries(rawData).map(([key, value]) => [key, value.USD])												делаем это автоматически, когда получаем цену с API	
+
+			Object.keys(updatedPrices).forEach([currency, newPrice] => {             текущий токен DOGE например, на неё есть кто подписался
+				const handlers =tickersHandlers.get(currency) || [];                 да есть, и неё есть функция которую мы передали в created 
+				handlers.forEach(fn => fn(newPrice)); 								 хорошо, вызови ту самую функцию с новой ценой
+			})
+		})					
+	}
+}
+	
+export const subscribeToTicker = (ticker, cb) => {  						когда какой-то тикер обновиться вызови функцию cb
+	const subscriber = tickersHandler.get(ticker) || []; 					получает значение пользователя в массиве tickersHandler или пустой массив
+	tickersHandler.set(ticker, [...subscribers, cb]) 
+}
+
+export const unsubscribeToTicker = ticker => { 
+	tickersHandlers.delete(ticker)
+}
+
+setInterval(loadtickersHandler, 5000)
+
+
+
+--------------------------------------------------------------------
+БИЗНЕС ЛОГИКА
+
+---------------------------
 
 Во App.vue
 
-import {loadTickers} from './api.js'
+import { subscribeToTicker, unsubscribeToTicker } from './api.js'
+
+
+-----METHODS
 
 ПОМЕНЯТЬ ВСЁ ВМЕСТО subscribeToUpdates на updateTickers
 
-async updateTickers(tickerName) {
-	if(!this.tickers.length) {    
-		return;											если у нас пустой массив тикеров, то просто выходим
-	}
-	const exchangeData = await loadTicker(this.tickers.map(t => t.name))
-	this.tickers.map(ticker => {                                               проходим по массиву и у каждого элемента меняем цена на цену еоторая лежит в API
-		const price = exchangeData[ticker.name.toUpperCase()];
-		ticker.price = price;                                                  замена цены
-	})
+formatPrice(price) {
+	if(price === '-') {return price;} // в случае ошибки бьем тревогу!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        this.tickers.find(t => t.name === tickerName).price =
-        	exchangeData.USD > 1 ? exchangeData.USD.toFixed(2) : exchangeData.USD.toPrecision(2);
-
-        if (this.selectedTicker?.name === tickerName) {
-            this.graph.push(data.USD);
-        }
+	return price > 1 ? price.toFixed(2) : price.toPrecision(2);
 },
+
+updateTicker(tickerName, price) {
+		this.tickers.filter(t => t.name === tickerName).forEach(t => { t.price = price })
+}
+
+handleDelete(tickerToRemove) {
+	unsubscribeToTicker(tickerToRemove.name)
+}
+
+-------------------------------------------------------------
+
+В HTML
+
+там где токен с данными о цене. пишем:
+
+<div class="px-4 py-5 sm:p-6 text-center">
+    <dt class="text-sm font-medium text-gray-500 truncate">
+        {{ t.name }} - USD
+    </dt>
+    <dd class="mt-1 text-3xl font-semibold text-gray-900">
+        {{ formatPrice(t.price) }}
+    </dd>
+</div>
+
+----------------------------------------------------------------------
 
 В created: {
 	if(tickersData) {
 		this.tickers = JSON.parse(tickersData)
+
+		после БИЗНЕС ИДЕИИ)
+
+		this.tickers.forEach(ticker => {
+			subscribeToTicker(ticker.name, (newPrice) => this.updateTicker(ticker.name, newPrice))
+		})
 	}
 	setInterval(this.updateTickers, 5000) // если будет ошибка setInterval(() => this.updateTickers(), 5000)
+}
+
+
+------------------------------------------------------------------------
+В add() {
+	убираем this.subscribeToUpdates(currentTicker.name)
+	
+	БЕЗНЕС ЛОГИКА
+	this.ticker = ''
+	subscribeToTicker(currentTicker.name, newPrice => this.updateTicker(currentTicker.name, newPrice)) // при создании подписки ничего не вызываеться
 }
 
 
