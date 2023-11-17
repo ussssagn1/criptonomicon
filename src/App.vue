@@ -199,7 +199,6 @@
       }
 
 		},
-
     methods: {
       subscribeToUpdates(tickerName) {
         setInterval(async () => {
@@ -256,7 +255,6 @@
         }, 2000)
       },	
     },
-
     mounted() { // получаем данные бд
       axios.get('https://min-api.cryptocompare.com/data/all/coinlist?summary=true').then(response => {
         if(response.data.Data && typeof response.data.Data === 'object') {
@@ -268,9 +266,7 @@
       .catch(error => {
         console.error('Ошибка при получении данных: ', error)
       })
-    },
-    
-
+    },  
     computed: {  // COMPUTED - НИКОГДА НЕ МОЖЕТ ВЫБИРАТЬ АРГУМЕНТ
       searchHandler() {				
           return this.info.filter(coin => {
@@ -314,7 +310,6 @@
         }
       },
     },
-
     watch: {
       tickers() {
         localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));

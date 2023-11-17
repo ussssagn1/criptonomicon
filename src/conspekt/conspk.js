@@ -217,6 +217,48 @@ computed: {
 
 
 ------------------------------------------------------ВТОРАЯ ЧАСТЬ------------------------------------------------------------
+в App.vue должна быть реализована бизнес логика, а в других файлах как мы конкретные нюансы бизнес логики реализуем. 
+а что у нас не бизнес логика, всё что свзано с API
+
+cоздаём файл api.js
+
+const API_KEY = `3285690656af1f203d8f0f6f2cdcea86a2f40b7a4babeec92873d29a87096ed6`
+
+export const loadTickers = (tickerName) => 
+	fetch(`https://min-api.cryptocompare.com/data/price?fsym=USD${tickerName}&tsyms=USD&api_key=${API_KEY}`)    
+		.then(r => r.json());          r - это данные API-шечки
+`)
+
+Во App.vue
+
+import {loadTickers} from './api.js'
+
+ПОМЕНЯТЬ ВСЁ ВМЕСТО subscribeToUpdates на updateTickers
+
+async updateTickers(tickerName) {
+	if(!this.tickers.length) {    
+		return;											если у нас пустой массив тикеров, то просто выходим
+	}
+	const exchangeData = await loadTicker(this.tickers.map(t => t.name))
+	this.tickers.map(ticker => {                                               проходим по массиву и у каждого элемента меняем цена на цену еоторая лежит в API
+		const price = exchangeData[ticker.name.toUpperCase()];
+		ticker.price = price;                                                  замена цены
+	})
+
+        this.tickers.find(t => t.name === tickerName).price =
+        	exchangeData.USD > 1 ? exchangeData.USD.toFixed(2) : exchangeData.USD.toPrecision(2);
+
+        if (this.selectedTicker?.name === tickerName) {
+            this.graph.push(data.USD);
+        }
+},
+
+В created: {
+	if(tickersData) {
+		this.tickers = JSON.parse(tickersData)
+	}
+	setInterval(this.updateTickers, 5000) // если будет ошибка setInterval(() => this.updateTickers(), 5000)
+}
 
 
 
