@@ -189,14 +189,6 @@
         }
       });
 
-      // if (windowData.filter) {
-      //   this.filter = windowData.filter;
-      // }
-
-      // if (windowData.page) {
-      //   this.page = windowData.page;
-      // }
-
       const tickersData = localStorage.getItem("cryptonomicon-list");
 
       if (tickersData) {
@@ -326,7 +318,7 @@
     watch: {
       tickers() {
         localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
-      },
+      },      
       filter() {
         this.page = 1
       },
