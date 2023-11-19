@@ -86,7 +86,7 @@
                 {{ t.name }} - USD
               </dt>
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                {{ t.price }}
+                {{  t.price  }}
               </dd>
             </div>
             <div class="w-full border-t border-gray-200"></div>
@@ -157,6 +157,8 @@
 
 <script>
   import axios from 'axios'
+  import {subscribeToTicker, unsubscribeFromTicker} from './api.js'
+
   export default {
     name: 'App',
     data() {
@@ -174,7 +176,6 @@
         
       }   
     },
-
     created() {
 			this.fetchData();
 
@@ -194,29 +195,15 @@
       if (tickersData) {
         this.tickers = JSON.parse(tickersData);
         this.tickers.forEach(ticker => {
-          this.subscribeToUpdates(ticker.name);
+          subscribeToTicker(ticker.name,  (newPrice) => {
+            this.updateTicker(ticker.name, newPrice)
+          })
         });
       }
+      setInterval(this.updateTickers, 5000)
 
 		},
-    methods: {
-      subscribeToUpdates(tickerName) {
-        setInterval(async () => {
-          const f = await fetch(
-            `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=3285690656af1f203d8f0f6f2cdcea86a2f40b7a4babeec92873d29a87096ed6`
-          );
-          const data = await f.json();
-
-          // currentTicker.price =  data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
-          this.tickers.find(t => t.name === tickerName).price =
-            data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
-
-          if (this.selectedTicker?.name === tickerName) {
-            this.graph.push(data.USD);
-          }
-        }, 5000);
-        this.ticker = "";
-      },
+    methods: {      
       add() { // основная функция добавить
         const currentTicker = { // создание нового тикера
           name: this.ticker, // имя
@@ -224,15 +211,27 @@
         }
 
         this.tickers = [...this.tickers, currentTicker] //обновление списка тикеров
+        this.ticker = '',
         this.filter = '',
 
-        this.subscribeToUpdates(currentTicker.name);
+        subscribeToTicker(currentTicker.name, newPrice => {
+          this.updateTicker(currentTicker.name, newPrice)
+        })
       },
       handleDelete(tickerToRemove) {
         this.tickers = this.tickers.filter(t => t !== tickerToRemove)
         if(this.selectedTicker === tickerToRemove) {
           this.selectedTicker = null;
         }
+        unsubscribeFromTicker(tickerToRemove)
+      },
+      updateTicker(tickerName, price) {
+        this.tickers.filter(t => t.name === tickerName).forEach(t => {
+          if(this.sel?.name === tickerName) {
+            this.graph.push(price)
+          }
+          t.price = price
+        })
       },
       select(ticker) {
         console.log(ticker)
@@ -245,7 +244,9 @@
             price: '-' // цена карточки
           }
           this.tickers.push(currentTicker)
-          this.subscribeToUpdates(currentTicker.name)
+          subscribeToTicker(currentTicker.name, newPrice => {
+            this.updateTicker(currentTicker.name, newPrice)
+          })
           
           this.ticker = ''
       },
@@ -285,7 +286,6 @@
           price => 5 + ((price - minValue) * 95) / (maxValue - minValue)
         )
       },
-
       // это для фильтрации
 
       startIndex() {

@@ -269,7 +269,20 @@ export const loadTickers = tickers =>
 
 вверху мы получаем стоимость, но нам же не это надо, нам нужно обновлять!!!!
 
+const API_KEY = `3285690656af1f203d8f0f6f2cdcea86a2f40b7a4babeec92873d29a87096ed6`
+
 const tickersHandlers = new Map()
+
+const socket = new WebSocket(`wss://streamer.cryptocompare.com/v2?api_key=${API_KEY}`)  РОБОТА С ВЭБ СОКЕТОМ
+
+const AGGERGATE_INDEX = 5;
+
+socket.addEventListener('message', e => {           //у сокета есть метод send - отправить запрос и событие message когда приходит сообщение в websocket
+	const messageContent = JSON.parse(e.data);
+	if(messageContent.TYPE !== AGGERGATE_INDEX) {
+		return
+	}
+})
 
 const loadTickers = () => {
 	if (tickersHandler.size === 0) {
@@ -289,10 +302,27 @@ const loadTickers = () => {
 		})					
 	}
 }
+
+function subscribeToTickerOnWS(ticker) {
+	const message = JSON.stringify({
+		"action": "SubAdd"
+		subs: [`5~CCCAGG~${ticker}~USD`]
+	})
+
+	if(socket.readyState === WebSocket.OPEN) { 
+		socket.send(message)
+		return
+	}
+	socket.addEventListener('open', () => {
+		socket.send(message);
+	}
+	{once: true})
+}
 	
 export const subscribeToTicker = (ticker, cb) => {  						когда какой-то тикер обновиться вызови функцию cb
 	const subscriber = tickersHandler.get(ticker) || []; 					получает значение пользователя в массиве tickersHandler или пустой массив
 	tickersHandler.set(ticker, [...subscribers, cb]) 
+	subscribeToTickerOnWS(ticker)
 }
 
 export const unsubscribeToTicker = ticker => { 
@@ -324,7 +354,13 @@ formatPrice(price) {
 },
 
 updateTicker(tickerName, price) {
-		this.tickers.filter(t => t.name === tickerName).forEach(t => { t.price = price })
+		this.tickers.filter(t => t.name === tickerName).forEach(t => {
+			if(t === this.selectedTicker) {
+				this.graph.push(price)
+			}
+			t.price = price 
+		})
+		
 }
 
 handleDelete(tickerToRemove) {
