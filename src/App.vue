@@ -20,7 +20,7 @@
                 type="text"
                 name="wallet"
                 id="wallet"
-                class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
+                class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md uppercase"
                 placeholder="Например DOGE"
               />
             </div>
@@ -67,7 +67,7 @@
           <button class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500" @click="page = page + 1" v-if="hasNextPage">
             Вперед
           </button>
-          <div>Фильтр: <input v-model="filter" @input="page = 1"/></div>
+          <div>Фильтр: <input v-model="filter" @input="page = 1" class="uppercase"/></div>
         </div>
 
         <hr class="w-full border-t border-gray-600 my-4" />
@@ -215,7 +215,7 @@
 
         subscribeToTicker(currentTicker.name, newPrice => {
           this.updateTicker(currentTicker.name, newPrice)
-        })
+        })        
       },
       handleDelete(tickerToRemove) { // удаление тикера
         this.tickers = this.tickers.filter(t => t !== tickerToRemove)
@@ -246,6 +246,7 @@
             this.updateTicker(currentTicker.name, newPrice)
           })
           
+          localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers))
           this.ticker = ''
       },
       fetchData() { // загрузка вначале
@@ -299,7 +300,7 @@
         return this.page * 6
       },
       filteredList() {
-        return this.tickers.filter(ticker => ticker.name.includes(this.filter))
+        return this.tickers.filter(ticker => ticker.name.includes(this.filter.toUpperCase()))
       },
       paginatedList() {
         return this.filteredList.slice(this.startIndex, this.endIndex)
