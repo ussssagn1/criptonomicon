@@ -86,7 +86,7 @@
                 {{ t.name }} - USD
               </dt>
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                {{  t.price  }}
+                {{  formatPrice(t.price)  }}
               </dd>
             </div>
             <div class="w-full border-t border-gray-200"></div>
@@ -178,7 +178,6 @@
     },
     created() {
 			this.fetchData();
-
       const windowData = Object.fromEntries(
         new URL(window.location).searchParams.entries()
       );
@@ -193,7 +192,7 @@
       const tickersData = localStorage.getItem("cryptonomicon-list");
 
       if (tickersData) {
-        this.tickers = JSON.parse(tickersData);
+        this.tickers = JSON.parse(tickersData)
         this.tickers.forEach(ticker => {
           subscribeToTicker(ticker.name,  (newPrice) => {
             this.updateTicker(ticker.name, newPrice)
@@ -203,7 +202,7 @@
       setInterval(this.updateTickers, 5000)
 
 		},
-    methods: {      
+    methods: {    
       add() { // основная функция добавить
         const currentTicker = { // создание нового тикера
           name: this.ticker, // имя
@@ -218,14 +217,14 @@
           this.updateTicker(currentTicker.name, newPrice)
         })
       },
-      handleDelete(tickerToRemove) {
+      handleDelete(tickerToRemove) { // удаление тикера
         this.tickers = this.tickers.filter(t => t !== tickerToRemove)
         if(this.selectedTicker === tickerToRemove) {
           this.selectedTicker = null;
         }
         unsubscribeFromTicker(tickerToRemove)
       },
-      updateTicker(tickerName, price) {
+      updateTicker(tickerName, price) { //обновление цены и графика у тикера
         this.tickers.filter(t => t.name === tickerName).forEach(t => {
           if(this.sel?.name === tickerName) {
             this.graph.push(price)
@@ -233,11 +232,10 @@
           t.price = price
         })
       },
-      select(ticker) {
-        console.log(ticker)
+      select(ticker) { // обычный выбор тикера
         this.selectedTicker = ticker;
       },
-      addBtn(coin) {
+      addBtn(coin) { // проход по API данным всех токенов, и выводим как подсказки, и клик тоже работает
           this.ticker = coin
           const currentTicker = { // создаёться новый объект, который пушиться в tickers
             name: this.ticker.toUpperCase(), // имя карточки
@@ -250,11 +248,17 @@
           
           this.ticker = ''
       },
-      fetchData() {
+      fetchData() { // загрузка вначале
         setTimeout(() => {
           this.loading = false
         }, 2000)
       },	
+      formatPrice(price) { // форматирование цены
+        if (price === undefined || price === '-') {
+          return price;
+        }
+        return price > 1 ? price.toFixed(2) : price.toPrecision(2)
+      },
     },
     mounted() { // получаем данные бд
       axios.get('https://min-api.cryptocompare.com/data/all/coinlist?summary=true').then(response => {
@@ -312,7 +316,7 @@
     },
     watch: {
       tickers() {
-        localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
+        localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers))
       },      
       filter() {
         this.page = 1
