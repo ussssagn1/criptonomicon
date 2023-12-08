@@ -202,7 +202,7 @@
 
 <script>
 import axios from "axios";
-import { subscribeToTicker, unsubscribeFromTicker } from "./API/api.js";
+import { subscribeToTicker, unsubscribeFromTicker } from "./api.js";
 
 export default {
   name: "App",
