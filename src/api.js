@@ -6,9 +6,9 @@ const socket = new WebSocket(`wss://streamer.cryptocompare.com/v2?api_key=${API_
 
 const AGGREGATE_INDEX = '5';                                                            // как оказалось это индекс который можно получить через протокол WS, тоесть если возравщаеться 5, то поход выполнен успешно
 
-                                                                                        // у сокетов есть два основных метода
-                                                                                        // событие send - отправить запрос
-                                                                                        // событие message - когда приходят сообщения из вэбсокета
+// у сокетов есть два основных метода
+// событие send - отправить запрос
+// событие message - когда приходят сообщения из вэбсокета
 
 socket.addEventListener('message', e => {
     const { TYPE: type, FROMSYMBOL: currency, PRICE: newPrice} = JSON.parse(e.data)     //JSON.parse(e.data) - фрагмент кода который преобразует строку JSON, содержащего в свойстве e.data
@@ -16,11 +16,11 @@ socket.addEventListener('message', e => {
                                                                                         // то что КАПСОМ извлекает значиение этого свойства и потом присваеваеться тому что маленьким текстом написанно
     if(type !== AGGREGATE_INDEX || newPrice === undefined) {                            // если цена равна undefind выходим или если тип полученого значения TYPE из WS не равен 5(успешное выполнение), тоже выходим
         return;
-    }   
+    }
 
     const handlers = tickersHandlers.get(currency) ?? [];                               // с помощью get, мы получаем в Map - значение, и просто присваеваем его в handlers, или просто выводим пустой массив
     handlers.forEach(fn => fn(newPrice));                                               // например BTC это currency, с помощью get мы получили его цену, а тут проходим и обновляем цену
-}); 
+});
 
 
 function sendToWebSocket(message) {                                                     // функция которая отправляет сообщения на WS
@@ -44,7 +44,7 @@ function subscribeToTickerOnWS(ticker) {                                        
 }
 
 function unsubscribeFromTickerOnWS(ticker) {
-    sendToWebSocket({                                                                   // ОБЗОР: на токене есть кнопка удалить, если нажимаем сробатывает функция, 
+    sendToWebSocket({                                                                   // ОБЗОР: на токене есть кнопка удалить, если нажимаем сробатывает функция,
         "action": "SubRemove",                                                          // и теперь данные про токен не приходят
         subs: [`5~CCCAGG~${ticker}~USD`]
     })
@@ -60,4 +60,3 @@ export const unsubscribeFromTicker = ticker => {
     tickersHandlers.delete(ticker);
     unsubscribeFromTickerOnWS(ticker);
 }
-
